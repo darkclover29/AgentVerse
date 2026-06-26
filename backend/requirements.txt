@@ -1,0 +1,15 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+pydantic==2.9.2
+
+# --- Optional (Tier-2 AI). The sim runs fine without these via built-in fallbacks. ---
+# Ollama is called over HTTP (no Python package needed) — just install Ollama and run:
+#   ollama pull qwen3:8b
+# ChromaDB enables semantic vector memory; without it, keyword memory is used.
+# chromadb==0.5.5
+
+# --- Dev / tests ---
+pytest==8.3.3
+httpx==0.27.2
+# python-dotenv==1.0.1   # optional: enables .env loading
