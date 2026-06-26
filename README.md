@@ -1,109 +1,88 @@
-# AgentVerse
+# AgentVerse — Chaotic Indian Metropolis Simulation 🇮🇳
 
-A self-evolving cyberpunk megacity where autonomous agents live, work, form relationships,
-and generate emergent stories. Event-sourced simulation backend (FastAPI) + live React
-dashboard with a Time Machine.
+Welcome to **AgentVerse**, a living, breathing simulation of a chaotic Indian metropolis (inspired by the daily hustle of Bangalore, Delhi, and Mumbai). 
 
-See [`AGENTVERSE_PLAN.md`](./AGENTVERSE_PLAN.md) for the full architecture and roadmap.
+Here, 100 autonomous agents—ranging from moonlighting IT developers and local Netas to auto-rickshaw union presidents and cutting-chai tapri owners—live their lives, manage their cash flows, navigate the notorious Silk Board traffic, and form friendships or rivalries in a closed-loop microeconomy.
 
-## Layout
+Everything is event-sourced, meaning you can use the **Time Machine** slider on the dashboard to rewind and replay the city's history step-by-step.
 
-```
-backend/    FastAPI · SQLAlchemy · event-sourced sim engine
-frontend/   React + Vite dashboard (city grid, news feed, timeline)
-```
+---
 
-## Quick start (Windows)
+## 🌆 What's Different? (The Indian Metropolis Context)
 
-Double-click **`start.bat`** (or run it from a terminal). It sets up the backend venv +
-dependencies, seeds the city on first run, installs frontend deps, launches both servers
-in their own windows, and opens the dashboard. Close the two windows to stop.
+We moved away from generic cyberpunk tropes to build a simulation that feels like a real, chaotic Indian city:
 
-Manual setup below if you prefer.
+* **Localized Factions & Occupations**:
+  * 🏛️ **Authority & Netas** (*formerly Corp*): Corporators, RTO Inspectors, and bureaucrats who collect municipal dues and launch encroachment drives.
+  * 💻 **IT & Side-Hustlers** (*formerly Hacker*): Software engineers and moonlighting developers coding by day in tech parks and hacking together side-gigs in PG rooms at night.
+  * 🛺 **Auto & Cab Cartels** (*formerly Syndicate*): Auto union presidents and water tanker operators controlling the local transport stands and collecting protection money.
+  * 🥬 **Vendors & Citizens** (*formerly Unaligned*): Kirana shop owners, street-food vendors, and unemployed graduates just trying to survive the traffic and get home.
+* **Cutting Chai Microeconomy**: Agents passively lose energy and happiness. To recover, they route to the nearest Dosa stall or Chai Tapri. If they have the cash, they buy a snack (₹15), transferring wealth from their pocket directly to the local business.
+* **The Metropolitan Samachar**: The city’s daily tabloid reporting on market saturations, municipal lockdowns, auto union strikes, and local gossip ("Chai Tapri Chatter").
 
-## Run the backend
+---
 
+## 🧠 Cognitive Sublink Console (Direct Chat with NPCs)
+
+Click on any agent to open their **HUD Operations Dossier** and establish a direct neural sublink to chat with them in real-time.
+
+* **Dynamic Moods**: Their conversational tone shifts dynamically based on their current stats. If an agent is exhausted (`Energy < 30`) or broke, they will snap, complain about local traffic, or yawn mid-sentence.
+* **Natural, Unfiltered Human Responses**: We removed robotic AI disclaimers (*"As an AI language model..."*). If you ask something inappropriate, rude, or off-topic, the agent responds like a real local would—with sarcasm, local slang, or a blunt refusal (*"Bhai, dimag mat kharab kar, aage badho!"*).
+
+---
+
+## 🛠️ Quick Start (Windows)
+
+The project is pre-configured for zero setup. 
+
+1. Double-click **`start.bat`** (or run it from your terminal).
+2. The script will automatically:
+   * Initialize a python virtual environment (`.venv`) and install backend packages.
+   * Generate and seed the database with 100 Indian agents and the 20x20 city grid.
+   * Install frontend dependencies and launch the dev servers.
+   * Open the live React dashboard in your browser.
+3. To stop, simply close the command prompt windows.
+
+### Manual Setup (If preferred)
+
+**1. Run the Backend:**
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m venv .venv
+# Activate: Windows -> .venv\Scripts\activate  |  Mac/Linux -> source .venv/bin/activate
 pip install -r requirements.txt
-python -m app.seed                  # create DB + 100 agents + city grid
-uvicorn app.main:app --reload       # http://localhost:8000  (docs at /docs)
+python -m app.seed                  # Seeds the database with Indian agent profiles
+uvicorn app.main:app --reload       # Runs backend at http://localhost:8000
 ```
 
-SQLite is used by default (zero setup). To use Postgres, set
-`DATABASE_URL=postgresql+psycopg://user:pass@localhost/agentverse`. Config can also live
-in a `backend/.env` file (see `.env.example`).
-
-Run the tests:
-
+*Run backend tests:*
 ```bash
-cd backend && pytest
+cd backend
+.venv\Scripts\python -m pytest
 ```
 
-## Run the frontend
-
+**2. Run the Frontend:**
 ```bash
 cd frontend
 npm install
-npm run dev                         # http://localhost:5173 (proxies /api + /ws to :8000)
+npm run dev                         # Runs dashboard at http://localhost:5173
 ```
 
-Click **Run** to auto-step the simulation, **Step** to advance manually, and drag the
-**Time Machine** slider to replay the city's state at any past day.
+---
 
-## How it works (event sourcing)
+## ⚡ How It Works (Event Sourcing)
 
-Every action an agent takes is an immutable `Event` appended to the store. World state,
-the relationship graph, and daily news are all *projections* folded from that event
-stream — so replaying events up to day N reconstructs the world exactly as it was. That's
-the whole Time Machine.
+Every single action in the city (a transaction at a chai tapri, an extortion shakedown, a new relationship, or a business going bankrupt) is saved as an immutable **Event** in the SQLite database. 
 
-## Tier-2 AI agents (optional, with fallbacks)
+The live world state, the relationship charts, and daily news headlines are all **projections** folded from this event stream. By dragging the **Time Machine** slider, the frontend requests the backend to fold events only up to day *N*, reconstructing the city grid exactly as it was at that millisecond in history.
 
-5 named agents are LLM planners. Each generates a multi-day **plan** (a goal + ordered
-steps from a fixed action vocabulary) that the engine executes over many ticks. Before
-planning, the agent retrieves relevant **memories** of its own past (RAG) to ground the
-prompt. Plans, memories, and relationships are all visible in the agent detail panel
-(click any agent).
+---
 
-The whole thing runs with or without the optional stack:
+## 🤖 LLM Planning & Vector Memory (Optional)
 
-| Component | If installed | Fallback |
-|-----------|--------------|----------|
-| **Ollama** (`ollama pull qwen3:8b`) | LLM-generated goals + steps | Heuristic faction-based planner |
-| **ChromaDB** (`pip install chromadb`) | Semantic vector memory | Keyword + recency + importance scoring |
+The simulation runs out-of-the-box using rule-based heuristics. However, if you want agents to behave with complex autonomous agency:
 
-The `/api/status` endpoint and the dashboard header badge show which mode is active.
-Set `OLLAMA_MODEL` to use a different model (e.g. `deepseek-r1:8b`).
+1. **Ollama Integration** (`ollama pull qwen2.5:14b` or `qwen3:8b`): When running, Tier-2 agents will consult the LLM to generate multi-day goals and plans.
+2. **ChromaDB**: Enables semantic vector memories for RAG (retrieval-augmented generation) so agents remember past interactions when planning.
 
-## Current status
-
-- ✅ Event store + projections (Agent, Relationship, Plan)
-- ✅ 20×20 grid, 100 agents, 4 factions, Tier-1 rule behavior
-- ✅ Tick loop (24 ticks/day), daily phases
-- ✅ REST API + WebSocket live stream
-- ✅ React dashboard: city grid, news feed, timeline replay
-- ✅ Force-directed relationship graph view
-- ✅ Tier-2 LLM planners (Ollama) with heuristic fallback
-- ✅ Vector memory (ChromaDB) with keyword fallback
-- ✅ Non-blocking planning: LLM runs in a background thread pool, so the tick loop never stalls
-- ✅ Test suite (pytest) + GitHub Actions CI; `/api/health`, logging, paginated endpoints
-- ✅ Agent detail panel: plan, memories, relationships, wealth/happiness sparklines
-- ✅ Economy: agents found businesses, hire staff, earn revenue, go bankrupt under competition
-- ✅ Animated agent movement (agents commute to work / seek others / go home)
-- ✅ Primed-rivalry seed scenario for a dramatic opening
-- ⬜ Demo GIF + screenshots in README
-
-## Economy
-
-Tier-2 agents with enough capital can **found a business** (type depends on faction:
-corp → market nodes / fab plants, hacker → data dens / exchanges, syndicate →
-smuggling rings / fight pits). Businesses **hire** the poorest agents, earn daily
-**revenue** split by local competition, pay **wages + rent**, and **go bankrupt** when
-saturated markets can't cover overhead — laying off their staff. It all flows through the
-event stream, so business births and deaths show up in the news feed and the Time Machine.
-
-Businesses appear as amber diamonds on the city grid; the HUD shows the live firm count.
-```
-
+The dashboard header badges and `/api/status` endpoint will show you which systems are currently loaded.
