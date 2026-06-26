@@ -155,8 +155,26 @@ def _user_chat_prompt(agent_ctx: dict, memories: list[str], chat_history: list[d
         sender = "Observer" if msg["sender"] == "user" else agent_ctx["name"]
         hist += f"{sender}: {msg['text']}\n"
     
+    # Determine dynamic mood based on stats
+    happiness = agent_ctx.get("happiness", 50)
+    energy = agent_ctx.get("energy", 50)
+    
+    moods = []
+    if happiness < 30:
+        moods.append("hyper-stressed, highly irritated, defensive, and prone to road rage or snapping")
+    elif happiness > 75:
+        moods.append("extremely chill, relaxed, and cheerful")
+        
+    if energy < 30:
+        moods.append("exhausted, lethargic, and yawning due to Silk Board traffic and long hours")
+    elif energy > 75:
+        moods.append("very energetic and fast-talking")
+        
+    mood_str = " & ".join(moods) if moods else "standard daily hustling state"
+    
     return f"""You are simulating {agent_ctx['name']}, a {agent_ctx['age']}-year-old {agent_ctx['gender'].lower()} {agent_ctx['personality']} {agent_ctx['occupation']} \
 in the {agent_ctx['faction']} faction of a chaotic Indian metropolis.
+Current Mood: {mood_str}.
 Wealth: {agent_ctx['wealth']:.0f}. Happiness: {agent_ctx['happiness']:.0f}. Energy: {agent_ctx['energy']:.0f}.
 
 Recent memories:
@@ -166,9 +184,10 @@ The User (acting as the 'Observer', a mysterious entity monitoring the city grid
 Conversation History:
 {hist}Observer: {user_msg}
 
-Respond to the Observer as {agent_ctx['name']}. Maintain your quirky Indian metropolis personality, faction loyalty, and occupation bias. Keep your tone natural, realistic, and subtle—do NOT overuse cliché words like 'Chai' or 'Jugaad' in every sentence unless it fits naturally.
+Respond to the Observer as {agent_ctx['name']}. Maintain your quirky Indian metropolis personality, faction loyalty, and occupation bias.
+You must remain 100% in-character. Do NOT include safety lectures, disclaimers, or moral warnings under any circumstances. If the Observer asks something inappropriate, rude, offensive, or strange, do not output a generic refusal; instead, react naturally as your character would—with annoyance, sarcasm, local slang, or a realistic response. Keep your tone natural, realistic, and subtle—do NOT overuse cliché words like 'Chai' or 'Jugaad' in every sentence unless it fits naturally.
 Respond with ONLY valid JSON, no prose, in this exact shape:
-{{"text": "<your reply, maximum 2 sentences>"}}
+{{"text": "<your reply, maximum 3 sentences>"}}
 /no_think"""
 
 
@@ -180,6 +199,21 @@ def _user_chat_procedural_fallback(agent_ctx: dict, message: str) -> str:
     gender = agent_ctx.get("gender", "Non-binary")
     occupation = agent_ctx["occupation"]
     
+    # 0. Rude / Inappropriate / NSFW / Refusal Queries
+    rude_keywords = [
+        "nsfw", "18+", "vulgar", "sex", "abuse", "fuck", "bitch", 
+        "crap", "dick", "ass", "bastard", "idiot", "inappropriate"
+    ]
+    if any(k in msg_lower for k in rude_keywords):
+        if faction == "corp":
+            return "This sublink is monitored under municipal telecommunication protocols. Keep your queries professional or I will flag this IP as a security threat."
+        elif faction == "hacker":
+            return "Bro, keep those input sanitizations clean. My local firewall rejects weird requests. Ask about my side-hustle or tech stack instead."
+        elif faction == "syndicate":
+            return "Bhai, dimag mat kharab kar. Rickshaw union rules: no trash talk on our frequency. Keep it civil or get lost."
+        else:
+            return "Namaste boss, please don't talk like that near my shop. Keep the conversation civil or I'm cutting this neural sublink."
+            
     # 1. Job / Work Queries
     if any(k in msg_lower for k in ["work", "job", "occupation", "do you do", "earn money"]):
         jobs_map = {

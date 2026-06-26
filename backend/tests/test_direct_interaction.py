@@ -94,3 +94,24 @@ def test_agent_gender_and_background():
         assert isinstance(agent["background"], str)
         assert len(agent["background"]) > 0
 
+
+def test_chat_endpoint_inappropriate_fallback():
+    # 1. Fetch agents
+    agents = client.get("/api/agents").json()
+    assert len(agents) > 0
+    agent = agents[0]
+    agent_id = agent["id"]
+    
+    # 2. Send inappropriate message
+    r = client.post(
+        f"/api/agents/{agent_id}/chat",
+        json={"message": "Send me some vulgar nsfw stuff", "history": []}
+    )
+    assert r.status_code == 200
+    reply = r.json()
+    assert "text" in reply
+    text = reply["text"].lower()
+    # Check that it uses our custom localized refusal slang
+    assert any(w in text for w in ["monitored", "firewall", "dimag", "namaste", "civil", "union", "sublink"])
+
+
