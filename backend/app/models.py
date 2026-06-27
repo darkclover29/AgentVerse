@@ -66,6 +66,7 @@ class SimState(Base):
     id = Column(Integer, primary_key=True, default=1)
     day = Column(Integer, default=0)
     tick = Column(Integer, default=0)
+    kitty_pool = Column(Float, default=100.0)
 
 
 class Business(Base):

@@ -50,6 +50,15 @@ def describe_event(db, ev: Event) -> str:
         return f"Day {ev.day}: {actor} became a {p.get('occupation', 'worker')}."
     if ev.type == "work":
         return f"Day {ev.day}: {actor} earned {p.get('amount', 0):.0f} from work."
+    if ev.type == "chat":
+        gossip = p.get("gossip_topic")
+        if gossip:
+            if gossip.startswith("Day "):
+                parts = gossip.split(":", 1)
+                if len(parts) > 1:
+                    gossip = parts[1].strip()
+            return f"Day {ev.day}: {actor} and {target} shared gossip: {gossip}"
+        return f"Day {ev.day}: {actor} and {target} chatted."
     return f"Day {ev.day}: {actor} did {ev.type}."
 
 

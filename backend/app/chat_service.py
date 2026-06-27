@@ -50,16 +50,50 @@ def submit(db: Session, agent_a: Agent, agent_b: Agent) -> None:
     a_mems = memory.recall(db, agent_a.id, f"{agent_b.name} relationships", k=4)
     b_mems = memory.recall(db, agent_b.id, f"{agent_a.name} relationships", k=4)
     
+    # Retrieve general memories for gossip selection
+    a_gen = memory.recall(db, agent_a.id, "gossip news rumors", k=8)
+    b_gen = memory.recall(db, agent_b.id, "gossip news rumors", k=8)
+    gossip_topic = _select_gossip(a_gen, b_gen, agent_a.name, agent_b.name)
+    
     with _lock:
-        _pending[key] = _executor.submit(_run, a_ctx, b_ctx, rel_ctx, a_mems, b_mems)
+        _pending[key] = _executor.submit(_run, a_ctx, b_ctx, rel_ctx, a_mems, b_mems, gossip_topic)
 
 
-def _run(a_ctx: dict, b_ctx: dict, rel_ctx: dict, a_mems: list[str], b_mems: list[str]) -> dict:
+def _select_gossip(a_mems: list[str], b_mems: list[str], name_a: str, name_b: str) -> str:
+    import random
+    all_mems = list(a_mems) + list(b_mems)
+    random.shuffle(all_mems)
+    first_a = name_a.split()[0].lower()
+    first_b = name_b.split()[0].lower()
+    for m in all_mems:
+        m_low = m.lower()
+        # Verify it's an event description (not about A or B)
+        if ":" in m_low and first_a not in m_low and first_b not in m_low:
+            return m
+            
+    # Localized fallback gossip topics
+    generic_topics = [
+        "Sharma Sweets & Chaat was overcrowded during the evening hours.",
+        "Traffic at Silk Board junction reached record delays.",
+        "Municipal Corporation planned a new encroachment drive near the metro.",
+        "RTO inspectors were checking auto permit renewals near Sector 5.",
+        "A moonlighting developer was caught coding their startup in office hours."
+    ]
+    return random.choice(generic_topics)
+
+
+def _run(a_ctx: dict, b_ctx: dict, rel_ctx: dict, a_mems: list[str], b_mems: list[str], gossip_topic: str) -> dict:
     try:
-        return llm.generate_chat(a_ctx, b_ctx, rel_ctx, a_mems, b_mems)
+        res = llm.generate_chat(a_ctx, b_ctx, rel_ctx, a_mems, b_mems, gossip_topic)
+        if res:
+            res["gossip_topic"] = gossip_topic
+        return res
     except Exception as exc:
         log.warning("conversation generation failed: %s", exc)
-        return llm.fallback_chat(a_ctx, b_ctx, rel_ctx)
+        res = llm.fallback_chat(a_ctx, b_ctx, rel_ctx, gossip_topic)
+        if res:
+            res["gossip_topic"] = gossip_topic
+        return res
 
 
 def persist_ready_chats(db: Session) -> int:
@@ -79,7 +113,11 @@ def persist_ready_chats(db: Session) -> int:
                     ev.append_event(
                         db, day=state.day, tick=state.tick, type=ev.CHAT,
                         agent_id=key[0], target_id=key[1],
-                        payload={"dialogue": result["dialogue"]}, importance=0.6
+                        payload={
+                            "dialogue": result["dialogue"],
+                            "gossip_topic": result.get("gossip_topic")
+                        },
+                        importance=0.6
                     )
                     applied += 1
             except Exception as exc:

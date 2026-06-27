@@ -13,9 +13,10 @@ from .config import GRID_SIZE, LOG_LEVEL
 from .database import SessionLocal, get_db
 from .models import Agent, Event, Relationship, SimState
 from .schemas import (AgentOut, BusinessOut, ClockOut, EventOut, HealthOut,
-                      StatusOut, StepRequest, TileOut, WorldOut)
+                      StatusOut, StepRequest, TileOut, WorldOut, EnvironmentOut)
 from .seed import get_grid, seed
 from .simulation import step_n
+from .environment import get_environment_state
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -65,8 +66,8 @@ def get_world():
 
 @app.get("/api/clock", response_model=ClockOut, tags=["world"], summary="Current day / tick")
 def get_clock(db: Session = Depends(get_db)):
-    s = db.get(SimState, 1) or SimState(day=0, tick=0)
-    return ClockOut(day=s.day, tick=s.tick)
+    s = db.get(SimState, 1) or SimState(day=0, tick=0, kitty_pool=100.0)
+    return ClockOut(day=s.day, tick=s.tick, kitty_pool=s.kitty_pool or 100.0)
 
 
 # ---- agents ----------------------------------------------------------------
@@ -90,7 +91,7 @@ def get_agents(faction: str | None = None, limit: int = Query(500, le=1000),
     rng = random.Random((s.day * 24 + s.tick) * 7919)
     
     for a in agents:
-        tx, ty = _destination(db, a, phase, grid, agents, rng)
+        tx, ty = _destination(db, a, phase, grid, agents, rng, s.day)
         a.dest_x = tx
         a.dest_y = ty
     return agents
@@ -172,9 +173,16 @@ def _user_chat_prompt(agent_ctx: dict, memories: list[str], chat_history: list[d
         
     mood_str = " & ".join(moods) if moods else "standard daily hustling state"
     
+    from .environment import get_aqi, get_aqi_status
+    day = agent_ctx.get("day", 0)
+    tick = agent_ctx.get("tick", 0)
+    aqi = get_aqi(day, tick)
+    aqi_status = get_aqi_status(aqi)
+    
     return f"""You are simulating {agent_ctx['name']}, a {agent_ctx['age']}-year-old {agent_ctx['gender'].lower()} {agent_ctx['personality']} {agent_ctx['occupation']} \
 in the {agent_ctx['faction']} faction of a chaotic Indian metropolis.
 Current Mood: {mood_str}.
+Current AQI: {aqi} ({aqi_status}).
 Wealth: {agent_ctx['wealth']:.0f}. Happiness: {agent_ctx['happiness']:.0f}. Energy: {agent_ctx['energy']:.0f}.
 
 Recent memories:
@@ -345,6 +353,7 @@ def post_agent_chat(agent_id: int, req: UserChatRequest, db: Session = Depends(g
     if not agent:
         return JSONResponse(status_code=404, content={"detail": "Agent not found"})
     
+    s = db.get(SimState, 1) or SimState(day=0, tick=0)
     agent_ctx = {
         "id": agent.id,
         "name": agent.name,
@@ -356,6 +365,8 @@ def post_agent_chat(agent_id: int, req: UserChatRequest, db: Session = Depends(g
         "wealth": agent.wealth,
         "happiness": agent.happiness,
         "energy": agent.energy,
+        "day": s.day,
+        "tick": s.tick,
     }
     
     from . import memory
@@ -417,19 +428,29 @@ def get_replay(day: int, db: Session = Depends(get_db)):
     return projections.replay_to_day(db, day)
 
 
+@app.get("/api/environment", response_model=EnvironmentOut, tags=["world"], summary="Environmental sensor readings")
+def get_environment(day: int | None = None, tick: int | None = None, db: Session = Depends(get_db)):
+    if day is None or tick is None:
+        s = db.get(SimState, 1) or SimState(day=0, tick=0)
+        day, tick = s.day, s.tick
+    return get_environment_state(day, tick)
+
+
 # ---- control ---------------------------------------------------------------
 @app.post("/api/step", response_model=ClockOut, tags=["control"], summary="Advance N ticks")
 def post_step(req: StepRequest, db: Session = Depends(get_db)):
     ticks = max(1, min(req.ticks, 24 * 30))  # clamp to a sane range
     day, tick = step_n(db, get_grid(), ticks)
-    return ClockOut(day=day, tick=tick)
+    s = db.get(SimState, 1)
+    return ClockOut(day=day, tick=tick, kitty_pool=s.kitty_pool if s else 100.0)
 
 
 @app.post("/api/reset", response_model=ClockOut, tags=["control"], summary="Reseed the world")
-def post_reset():
+def post_reset(db: Session = Depends(get_db)):
     seed(reset=True)
     log.info("world reset")
-    return ClockOut(day=0, tick=0)
+    s = db.get(SimState, 1)
+    return ClockOut(day=0, tick=0, kitty_pool=s.kitty_pool if s else 100.0)
 
 
 class TileUpdate(BaseModel):
@@ -480,12 +501,14 @@ async def ws(websocket: WebSocket):
                     "payload": e.payload or {},
                     "importance": e.importance
                 } for e in events]
+                s = db.get(SimState, 1)
+                kitty_pool = s.kitty_pool if s else 100.0
             except Exception:
                 log.exception("ws step failed")
-                agents, day, tick, events_out = [], 0, 0, []
+                agents, day, tick, events_out, kitty_pool = [], 0, 0, [], 100.0
             finally:
                 db.close()
-            await websocket.send_json({"day": day, "tick": tick, "agents": agents, "events": events_out})
+            await websocket.send_json({"day": day, "tick": tick, "kitty_pool": kitty_pool, "agents": agents, "events": events_out})
             await asyncio.sleep(0.5)
     except WebSocketDisconnect:
         return

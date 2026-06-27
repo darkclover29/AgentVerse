@@ -39,6 +39,7 @@ export default function App() {
   const [logFilter, setLogFilter] = useState("all");
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [showDossierModal, setShowDossierModal] = useState(false);
+  const [environment, setEnvironment] = useState(null);
   const sockRef = useRef(null);
 
   function selectById(id) {
@@ -57,6 +58,10 @@ export default function App() {
   }, []);
 
   useEffect(() => { api.getBusinesses().then(setBusinesses); }, [clock.day]);
+
+  useEffect(() => {
+    api.getEnvironment(viewDay, viewDay === clock.day ? clock.tick : 12).then(setEnvironment);
+  }, [viewDay, clock.tick, clock.day]);
 
   const selectedLive = selected
     ? agents.find((a) => a.id === selected.id) || selected
@@ -82,7 +87,7 @@ export default function App() {
   useEffect(() => {
     if (!running) { sockRef.current?.close(); sockRef.current = null; return; }
     const sock = api.openSocket((msg) => {
-      setClock({ day: msg.day, tick: msg.tick });
+      setClock({ day: msg.day, tick: msg.tick, kitty_pool: msg.kitty_pool });
       setViewDay(msg.day);
       setAgents((prev) => prev.map((a) => {
         const u = msg.agents.find((m) => m.id === a.id);
@@ -262,6 +267,7 @@ export default function App() {
                     businesses={businesses} onSelect={setSelected}
                     selectedId={selectedLive?.id} factionFilter={factionFilter}
                     overlayMode={overlayMode} editMode={editMode}
+                    environment={environment}
                     onTileUpdate={async (x, y, type) => {
                       await api.updateTile(x, y, type);
                       setWorld(await api.getWorld());
@@ -348,6 +354,36 @@ export default function App() {
           <AgentPanel agent={selectedLive} onClose={() => setSelected(null)} onInspect={() => setShowDossierModal(true)} />
         ) : (
           <>
+            <div className="section-title">Environmental Sensors</div>
+            <div className="card card-pad sensor-widget font-mono" style={{ marginBottom: "15px" }}>
+              <div className="sensor-row">
+                <span className="lbl">WEATHER:</span>
+                <span className={`val sensor-badge ${environment?.is_monsoon ? "poor" : "good"}`}>
+                  {environment?.is_monsoon ? "⛈️ Monsoon Flood" : "☀️ Clear Sky"}
+                </span>
+              </div>
+              <div className="sensor-row">
+                <span className="lbl">AQI INDEX:</span>
+                <span className={`val sensor-badge ${
+                  (environment?.aqi_level || 0) < 150 ? "good" : (environment?.aqi_level || 0) < 250 ? "moderate" : "poor"
+                }`}>
+                  😷 {environment?.aqi_level || 100} ({environment?.aqi_status || "GOOD"})
+                </span>
+              </div>
+              <div className="sensor-row">
+                <span className="lbl">TRAFFIC:</span>
+                <span className={`val sensor-badge ${environment?.is_traffic_gridlock ? "poor" : "good"}`}>
+                  {environment?.is_traffic_gridlock ? "🚗 SILK BOARD BLOCKED" : "🟢 normal lanes"}
+                </span>
+              </div>
+              <div className="sensor-row">
+                <span className="lbl">KITTY POOL:</span>
+                <span className="val" style={{ color: "#10b981", fontWeight: "bold" }}>
+                  ₹{Math.round(clock.kitty_pool || 100)}
+                </span>
+              </div>
+            </div>
+
             <div className="section-title">City Feed · Day {news?.day ?? 0}</div>
             <NewsFeed news={news} />
 

@@ -70,12 +70,19 @@ const MICRO_ICONS = {
 export default function CityGrid({
   tiles, gridSize, agents, businesses = [], onSelect,
   selectedId = null, factionFilter = null, overlayMode = "none",
-  editMode = false, onTileUpdate
+  editMode = false, onTileUpdate, environment = null
 }) {
   const [editingTile, setEditingTile] = useState(null);
   const [hoveredCell, setHoveredCell] = useState(null);
 
   if (!tiles.length) return <div className="muted">Loading city…</div>;
+
+  const floodedSet = new Set(
+    environment?.flooded_tiles?.map(([x, y]) => `${x},${y}`) || []
+  );
+  const gridlockSet = new Set(
+    environment?.gridlock_tiles?.map(([x, y]) => `${x},${y}`) || []
+  );
 
   const map = {};
   for (const t of tiles) map[`${t.x},${t.y}`] = t.type;
@@ -132,10 +139,18 @@ export default function CityGrid({
       }
 
       const type = tileType(map, x, y);
+      const key = `${x},${y}`;
+      const isFlooded = floodedSet.has(key);
+      const isGridlock = gridlockSet.has(key);
+      
+      let overlayClass = "";
+      if (isFlooded) overlayClass += " env-flooded";
+      if (isGridlock) overlayClass += " env-gridlock";
+
       cells.push(
         <div 
-          key={`${x},${y}`} 
-          className={`tile ${type} ${editMode ? "editable-tile" : ""}`}
+          key={key} 
+          className={`tile ${type} ${editMode ? "editable-tile" : ""}${overlayClass}`}
           style={cellStyle}
           onClick={() => {
             if (editMode) {
@@ -146,6 +161,8 @@ export default function CityGrid({
           onMouseLeave={() => setHoveredCell(null)}
         >
           <div className="tile-glow-border"></div>
+          {isFlooded && <div className="water-ripple"></div>}
+          {isGridlock && <div className="traffic-indicator">🚗</div>}
           {MICRO_ICONS[type]}
         </div>
       );
@@ -155,8 +172,28 @@ export default function CityGrid({
   const pct = (n) => `${((n + 0.5) / gridSize) * 100}%`;
   const selectedAgent = agents.find(a => a.id === selectedId);
 
+  const aqiVal = environment?.aqi_level || 100;
+  const smogOpacity = aqiVal > 200 ? Math.min(0.35, (aqiVal - 200) / 650) : 0;
+
   return (
-    <div className="grid-wrap">
+    <div className="grid-wrap" style={{ position: "relative" }}>
+      {smogOpacity > 0 && (
+        <div 
+          className="aqi-smog-overlay" 
+          style={{ 
+            position: "absolute", 
+            top: 0, 
+            left: 0, 
+            width: "100%", 
+            height: "100%", 
+            background: "rgba(101, 107, 103, 0.4)", 
+            opacity: smogOpacity, 
+            pointerEvents: "none", 
+            zIndex: 4,
+            borderRadius: 12
+          }} 
+        />
+      )}
       {hoveredCell && (
         <div className="grid-telemetry-hud font-mono">
           <div className="hud-line"><span className="label">LOC:</span> <span className="val">[{hoveredCell.x.toString().padStart(2, "0")}, {hoveredCell.y.toString().padStart(2, "0")}]</span></div>

@@ -84,3 +84,11 @@ export function openSocket(onMessage) {
   sock.onmessage = (e) => onMessage(JSON.parse(e.data));
   return sock;
 }
+
+export async function getEnvironment(day, tick) {
+  let url = `${base}/api/environment`;
+  if (day !== undefined && tick !== undefined) {
+    url += `?day=${day}&tick=${tick}`;
+  }
+  return (await fetch(url)).json();
+}

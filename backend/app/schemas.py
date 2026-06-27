@@ -64,6 +64,18 @@ class WorldOut(BaseModel):
 class ClockOut(BaseModel):
     day: int
     tick: int
+    kitty_pool: float
+
+
+class EnvironmentOut(BaseModel):
+    day: int
+    tick: int
+    is_monsoon: bool
+    flooded_tiles: list[list[int]]
+    aqi_level: int
+    aqi_status: str
+    is_traffic_gridlock: bool
+    gridlock_tiles: list[list[int]]
 
 
 class StepRequest(BaseModel):

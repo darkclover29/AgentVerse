@@ -4,7 +4,7 @@ Every state change flows through append_event(), which (1) writes the immutable 
 and (2) folds it into the Agent / Relationship projections. To time-travel, you replay
 events up to a target day against a fresh projection (see projections.replay_to_day).
 """
-from .models import Agent, Event, Relationship, Business
+from .models import Agent, Event, Relationship, Business, SimState
 
 # Event types
 MOVE = "move"
@@ -25,6 +25,7 @@ DATA_HEIST = "data_heist"
 SHAKEDOWN = "shakedown"
 LOCKDOWN = "lockdown"
 MUTUAL_AID = "mutual_aid"
+KITTY_PARTY = "kitty_party"
 
 
 def _rel(db, a_id, b_id):
@@ -166,15 +167,46 @@ def apply_event(db, ev: Event):
             biz.capital -= p.get("amount", 30.0)
 
     elif ev.type == MUTUAL_AID:
-        biz = db.get(Business, p.get("business_id"))
-        if biz:
-            biz.capital += p.get("amount", 30.0)
-        # Deduct proportional share from all other unaligned agents
-        unaligned = db.query(Agent).filter(Agent.faction == "unaligned", Agent.id != ev.agent_id).all()
-        if unaligned:
-            share = p.get("amount", 30.0) / len(unaligned)
-            for ua in unaligned:
-                ua.wealth = max(0.0, ua.wealth - share)
+        amount = p.get("amount", 50.0)
+        state = db.get(SimState, 1)
+        payout = amount
+        if state:
+            # Don't let kitty pool go negative
+            if (state.kitty_pool or 0.0) < payout:
+                payout = max(0.0, state.kitty_pool or 0.0)
+            state.kitty_pool = max(0.0, (state.kitty_pool or 0.0) - payout)
+            
+        biz_id = p.get("business_id")
+        if biz_id:
+            biz = db.get(Business, biz_id)
+            if biz:
+                biz.capital += payout
+        else:
+            receiver = db.get(Agent, ev.agent_id)
+            if receiver:
+                receiver.wealth += payout
+
+    elif ev.type == KITTY_PARTY:
+        participants = p.get("participants", [])
+        state = db.get(SimState, 1)
+        contrib = 15.0
+        total_contrib = 0.0
+        for pid in participants:
+            agent = db.get(Agent, pid)
+            if agent:
+                agent.wealth = max(0.0, agent.wealth - contrib)
+                agent.happiness = _clamp(agent.happiness + 15.0, 0, 100)
+                total_contrib += contrib
+        if state:
+            state.kitty_pool = (state.kitty_pool or 0.0) + total_contrib
+            
+        # Boost mutual trust/friendship between participants
+        for i, id_a in enumerate(participants):
+            for id_b in participants[i+1:]:
+                for x, y in ((id_a, id_b), (id_b, id_a)):
+                    rel = _rel(db, x, y)
+                    rel.friendship = _clamp(rel.friendship + 4.0)
+                    rel.trust = _clamp(rel.trust + 2.0)
 
 
 def append_event(db, *, day, tick, type, agent_id=None, target_id=None,

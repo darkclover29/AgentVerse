@@ -6,6 +6,7 @@ from . import memory, movement, planning
 from .agents import decide_action
 from .config import TICKS_PER_DAY
 from .models import Agent, SimState
+from .environment import get_aqi
 
 
 def _phase(tick: int) -> str:
@@ -46,20 +47,43 @@ def step_tick(db, grid):
     except Exception:
         pass
 
-    # apply passive decay: happiness -0.5, energy -1.0
+    # AQI determines passive happiness decay rate
+    aqi = get_aqi(state.day, state.tick)
+    decay_happiness = 1.0 if aqi > 250 else 0.5
+
+    # apply passive decay: happiness decays faster in high AQI
     for agent in agents:
         if phase != "sleep":
             agent.energy = max(0.0, agent.energy - 1.0)
-            agent.happiness = max(0.0, agent.happiness - 0.5)
+            agent.happiness = max(0.0, agent.happiness - decay_happiness)
 
     # everyone takes a step toward where they're headed this phase
     movement.move_agents(db, agents, phase, state.day, state.tick, grid, rng)
+
+    # Weekend Kitty Parties: trigger for groups of unaligned agents on Plaza tiles
+    kitty_party_attendees = set()
+    if phase == "social" and (state.day % 7) in (5, 6):
+        from .world import tiles_of_type
+        plazas = tiles_of_type(grid, "plaza")
+        for px, py in plazas:
+            plaza_agents = [a for a in agents if a.x == px and a.y == py and a.faction == "unaligned"]
+            if len(plaza_agents) >= 2:
+                p_ids = [a.id for a in plaza_agents]
+                ev.append_event(
+                    db, day=state.day, tick=state.tick, type=ev.KITTY_PARTY,
+                    agent_id=p_ids[0], target_id=p_ids[1] if len(p_ids) > 1 else None,
+                    payload={"participants": p_ids}, importance=0.6
+                )
+                for a in plaza_agents:
+                    kitty_party_attendees.add(a.id)
 
     from .models import Business
     open_bizs = db.query(Business).filter(Business.status == "open").all()
     biz_by_pos = {(b.x, b.y): b for b in open_bizs}
 
     for agent in agents:
+        if agent.id in kitty_party_attendees:
+            continue
         # Check if agent is on a business tile that satisfies their need
         biz = biz_by_pos.get((agent.x, agent.y))
         if biz and phase in ("personal", "social") and agent.wealth >= 20.0:

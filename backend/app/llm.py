@@ -128,10 +128,15 @@ def ollama_available() -> bool:
         return False
 
 
-def _chat_prompt(a_ctx: dict, b_ctx: dict, rel: dict, a_mems: list[str], b_mems: list[str]) -> str:
+def _chat_prompt(a_ctx: dict, b_ctx: dict, rel: dict, a_mems: list[str], b_mems: list[str], gossip_topic: str | None = None) -> str:
     mem_a = "\n".join(f"- {m}" for m in a_mems) or "- (no notable memories)"
     mem_b = "\n".join(f"- {m}" for m in b_mems) or "- (no notable memories)"
-    return f"""You are simulating a short 3-line conversation in a cyberpunk megacity.
+    
+    gossip_instruction = ""
+    if gossip_topic:
+        gossip_instruction = f"\nDuring the conversation, one of the speakers must mention or ask about this gossip/rumor they heard: '{gossip_topic}'. Bring it up naturally."
+
+    return f"""You are simulating a short 3-line conversation in a chaotic Indian metropolis.
 Speaker A: {a_ctx['name']}, a {a_ctx['personality']} {a_ctx['occupation']} of the {a_ctx['faction']} faction.
 Speaker B: {b_ctx['name']}, a {b_ctx['personality']} {b_ctx['occupation']} of the {b_ctx['faction']} faction.
 
@@ -143,8 +148,8 @@ Recent memories for A:
 Recent memories for B:
 {mem_b}
 
-Write a short, gritty, realistic 3-line cyberpunk conversation between them.
-A speaks first, B responds, then A finishes.
+Write a short, realistic 3-line conversation between them.{gossip_instruction}
+A speaks first, B responds, then A finishes. Keep it natural and do not include any safety moralizing.
 Respond with ONLY valid JSON in this exact shape:
 {{"dialogue": [
   {{"speaker": "{a_ctx['name']}", "text": "<line 1>"}},
@@ -154,9 +159,9 @@ Respond with ONLY valid JSON in this exact shape:
 Do not write any markdown blocks or prose around it. /no_think"""
 
 
-def generate_chat(a_ctx: dict, b_ctx: dict, rel: dict, a_mems: list[str], b_mems: list[str]) -> dict:
+def generate_chat(a_ctx: dict, b_ctx: dict, rel: dict, a_mems: list[str], b_mems: list[str], gossip_topic: str | None = None) -> dict:
     """Return a generated conversation dialogue."""
-    raw = _call_ollama(_chat_prompt(a_ctx, b_ctx, rel, a_mems, b_mems))
+    raw = _call_ollama(_chat_prompt(a_ctx, b_ctx, rel, a_mems, b_mems, gossip_topic))
     if raw:
         try:
             obj = json.loads(raw)
@@ -164,14 +169,29 @@ def generate_chat(a_ctx: dict, b_ctx: dict, rel: dict, a_mems: list[str], b_mems
                 return obj
         except Exception:
             pass
-    return fallback_chat(a_ctx, b_ctx, rel)
+    return fallback_chat(a_ctx, b_ctx, rel, gossip_topic)
 
 
-def fallback_chat(a_ctx: dict, b_ctx: dict, rel: dict) -> dict:
+def fallback_chat(a_ctx: dict, b_ctx: dict, rel: dict, gossip_topic: str | None = None) -> dict:
     """Heuristic conversation if Ollama is unreachable."""
     friendship = rel.get("friendship", 0)
     rivalry = rel.get("rivalry", 0)
-    if rivalry > friendship:
+    
+    if gossip_topic:
+        speech_gossip = gossip_topic
+        if speech_gossip.startswith("Day "):
+            parts = speech_gossip.split(":", 1)
+            if len(parts) > 1:
+                speech_gossip = parts[1].strip()
+        if speech_gossip and speech_gossip[0].isupper():
+            speech_gossip = speech_gossip[0].lower() + speech_gossip[1:]
+            
+        lines = [
+            f"Hey, did you hear the news? Apparently {speech_gossip}.",
+            f"Accha? I had no clue. This city is full of surprises.",
+            f"Exactly, you have to keep your ears open on these streets."
+        ]
+    elif rivalry > friendship:
         lines = [
             f"Watch your back, {b_ctx['name']}. This sector is getting tight.",
             f"Is that a threat, {a_ctx['name']}? Or are you just looking for trouble?",

@@ -114,6 +114,29 @@ def run_daily_economics(db, day: int, rng):
                         payload={"business": biz.name, "net": round(net, 1), "adjust": round(adjust, 1)},
                         importance=0.3 if net > 0 else 0.6)
 
+        # Check for mutual-aid relief payout if unaligned business capital is low (< 40)
+        if owner and owner.faction == "unaligned" and biz.capital < 40.0:
+            from .models import SimState
+            state = db.get(SimState, 1)
+            if state and (state.kitty_pool or 0.0) > 0.0:
+                payout = min(50.0, state.kitty_pool or 0.0)
+                ev.append_event(db, day=day, tick=0, type=ev.MUTUAL_AID, agent_id=owner.id,
+                                payload={"business_id": biz.id, "amount": payout, "business_name": biz.name},
+                                importance=0.8)
+                db.flush()
+
         if biz.capital < 0:
             ev.append_event(db, day=day, tick=0, type=ev.BANKRUPT, agent_id=biz.owner_id,
                             payload={"business": biz.name}, importance=0.9)
+
+    # Check for individual unaligned agents who need mutual-aid relief (wealth < 30)
+    from .models import SimState
+    state = db.get(SimState, 1)
+    if state and (state.kitty_pool or 0.0) > 0.0:
+        unaligned_agents = db.query(Agent).filter(Agent.faction == "unaligned").all()
+        for a in unaligned_agents:
+            if a.wealth < 30.0 and (state.kitty_pool or 0.0) > 0.0:
+                payout = min(50.0, state.kitty_pool or 0.0)
+                ev.append_event(db, day=day, tick=0, type=ev.MUTUAL_AID, agent_id=a.id,
+                                payload={"amount": payout}, importance=0.7)
+                db.flush()
