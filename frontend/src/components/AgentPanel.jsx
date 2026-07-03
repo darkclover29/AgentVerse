@@ -229,6 +229,9 @@ export default function AgentPanel({ agent, onClose, onInspect }) {
       {tab === "sublink" && (
         <div className="sublink-panel">
           <div className="section-title">Cognitive Sublink: {agent.name.toUpperCase()}</div>
+          <div className="font-mono" style={{ fontSize: 9, padding: "0 16px 8px 16px", color: "var(--accent)" }}>
+            * Procedural fallback active (Full LLM chat available when run locally with Ollama)
+          </div>
           
           <div className="sublink-messages font-mono scrollable" style={{ height: "40vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 6, marginBottom: 12 }}>
             <div className="sublink-msg system">

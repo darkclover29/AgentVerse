@@ -158,19 +158,68 @@ export default function App() {
     return () => sock.close();
   }, [running, agents.length]);
 
+  // Client-side simulation ticker for static mode
+  useEffect(() => {
+    if (!running || !api.isStatic()) return;
+
+    const interval = setInterval(async () => {
+      const c = await api.step(1);
+      api.setStaticClock(c.day, c.tick);
+      setClock(c);
+      setViewDay(c.day);
+      
+      const activeAgents = await api.getAgents();
+      setAgents(activeAgents);
+      
+      const biz = await api.getBusinesses();
+      setBusinesses(biz);
+      
+      const env = await api.getEnvironment(c.day, c.tick);
+      setEnvironment(env);
+      
+      const staticLogs = api.getStaticLogs();
+      setLogs(staticLogs);
+      
+      if (c.day === 30 && c.tick === 23) {
+        setRunning(false);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [running]);
+
   async function manualStep(ticks) {
     const c = await api.step(ticks);
-    setClock(c); setViewDay(c.day);
-    setAgents(await api.getAgents());
+    if (api.isStatic()) {
+      api.setStaticClock(c.day, c.tick);
+      setClock(c);
+      setViewDay(c.day);
+      setAgents(await api.getAgents());
+      setBusinesses(await api.getBusinesses());
+      setEnvironment(await api.getEnvironment(c.day, c.tick));
+      setLogs(api.getStaticLogs());
+    } else {
+      setClock(c); setViewDay(c.day);
+      setAgents(await api.getAgents());
+    }
   }
 
   async function scrub(day) {
     setViewDay(day);
-    const snap = await api.getReplay(day);
-    setAgents((prev) => prev.map((a) => {
-      const s = snap.agents.find((m) => m.id === a.id);
-      return s ? { ...a, x: s.x, y: s.y, wealth: s.wealth } : a;
-    }));
+    if (api.isStatic()) {
+      api.setStaticClock(day, 23);
+      setClock({ day: day, tick: 23 });
+      setAgents(await api.getAgents());
+      setBusinesses(await api.getBusinesses());
+      setEnvironment(await api.getEnvironment(day, 23));
+      setLogs(api.getStaticLogs());
+    } else {
+      const snap = await api.getReplay(day);
+      setAgents((prev) => prev.map((a) => {
+        const s = snap.agents.find((m) => m.id === a.id);
+        return s ? { ...a, x: s.x, y: s.y, wealth: s.wealth } : a;
+      }));
+    }
   }
 
   const t2count = agents.filter((a) => a.tier === 2).length;
@@ -248,9 +297,21 @@ export default function App() {
               }} title="Rebuild database projections from event log"><Icon.Refresh /> Reproject</button>
 
               <button onClick={async () => {
-                await api.reset(); setClock({ day: 0, tick: 0 }); setViewDay(0);
-                setSelected(null); setAgents(await api.getAgents());
-                setBusinesses(await api.getBusinesses());
+                await api.reset(); 
+                if (api.isStatic()) {
+                  api.setStaticClock(0, 0);
+                  setClock({ day: 0, tick: 0, kitty_pool: 100 }); 
+                  setViewDay(0);
+                  setSelected(null); 
+                  setAgents(await api.getAgents());
+                  setBusinesses(await api.getBusinesses());
+                  setLogs(api.getStaticLogs());
+                  setEnvironment(await api.getEnvironment(0, 0));
+                } else {
+                  setClock({ day: 0, tick: 0 }); setViewDay(0);
+                  setSelected(null); setAgents(await api.getAgents());
+                  setBusinesses(await api.getBusinesses());
+                }
               }}><Icon.Reset /> Reset</button>
               {view === "network" && (
                 <button onClick={loadGraph}><Icon.Refresh /> Refresh</button>
@@ -273,7 +334,7 @@ export default function App() {
                       setWorld(await api.getWorld());
                     }}
                   />
-                  <Timeline day={viewDay} maxDay={clock.day} onScrub={scrub} />
+                  <Timeline day={viewDay} maxDay={api.isStatic() ? 30 : clock.day} onScrub={scrub} />
                 </div>
                 <CityRail
                   agents={agents} businesses={businesses}

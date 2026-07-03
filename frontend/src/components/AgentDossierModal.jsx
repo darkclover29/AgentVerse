@@ -191,6 +191,9 @@ export default function AgentDossierModal({ agent, onClose }) {
             <div className="dossier-card-header font-mono">5. COGNITIVE_SUBLINK_TERMINAL</div>
             
             <div className="dossier-chat-panel">
+              <div style={{ fontSize: 9, color: "var(--warn)", padding: "5px 10px", borderBottom: "1px solid var(--border)", background: "rgba(255, 193, 7, 0.05)" }} className="font-mono">
+                NOTICE: PROCEDURAL FALLBACK ACTIVE. FULL LLM COGNITION AVAILABLE WHEN RUN LOCALLY WITH OLLAMA.
+              </div>
               <div className="dossier-chat-messages font-mono scrollable">
                 <div className="sublink-msg system">
                   <span className="time">[SYSTEM_LOG]</span>
