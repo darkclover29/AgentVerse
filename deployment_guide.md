@@ -29,25 +29,43 @@ Once active, Render will give you a public URL (e.g., `https://agentverse-backen
 
 ---
 
-## 2. Deploying the React Frontend (Vercel)
+## 2. Deploying the React Frontend (Cloudflare Pages or Vercel)
 
-Vercel is optimized for React static hosting and automatically configures builds.
+Both Cloudflare Pages and Vercel are excellent free static hosting platforms.
 
-### Steps:
+### Option A: Cloudflare Pages (Recommended)
+1. Sign up/Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/).
+2. Navigate to **Workers & Pages** and click **Create** -> **Pages** -> **Connect to Git**.
+3. Select your GitHub repository.
+4. Set up the build settings:
+   - **Project Name**: `agentverse` (or similar)
+   - **Production Branch**: `main`
+   - **Framework Preset**: `None` (or configure manually)
+   - **Root Directory**: `frontend` *(Tells Cloudflare to compile code inside `/frontend`)*
+   - **Build Command**: `npm run build`
+   - **Build Output Directory**: `dist`
+5. Click **Save and Deploy**. Cloudflare will run the initial build.
+6. Configure the backend URL variable:
+   - Once deployed, go to the project's **Settings** -> **Environment Variables**.
+   - Click **Add Variable** under *Production* (and optionally *Preview*).
+   - Set **Variable Name**: `VITE_API_BASE_URL`
+   - Set **Value**: `https://your-backend.onrender.com` *(Replace with your Render URL)*
+   - Save the settings.
+7. Go to **Deployments** -> select the latest deployment -> click **Retry Deployment** (or trigger a new git push) so it builds with the environment variable active.
+
+### Option B: Vercel
 1. Sign up/Log in to [Vercel](https://vercel.com/).
 2. Click **Add New** and select **Project**.
 3. Import your GitHub repository.
-4. Configure the project:
-   - **Root Directory**: `frontend` *(Crucial: This tells Vercel to compile the code inside the `/frontend` folder)*
-   - **Framework Preset**: `Vite` (should auto-detect)
+4. Configure the project settings:
+   - **Root Directory**: `frontend` *(Crucial: compiles the code inside the `/frontend` folder)*
+   - **Framework Preset**: `Vite`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
-5. Under **Environment Variables**, add:
+5. Expand **Environment Variables** and add:
    - **Key**: `VITE_API_BASE_URL`
-   - **Value**: `https://your-backend.onrender.com` *(Replace with your actual Render URL)*
+   - **Value**: `https://your-backend.onrender.com`
 6. Click **Deploy**.
-
-Vercel will build your static files and deploy them to a custom `.vercel.app` domain (or your own custom domain).
 
 ---
 
