@@ -563,11 +563,19 @@ function userChatProceduralFallback(agentCtx, message) {
   }
 
   // Wealth / Money
-  if (["wealth", "money", "credit", "rich", "rupees", "cash"].some(k => msgLower.includes(k))) {
+  if (["wealth", "money", "credit", "rich", "rupee", "cash", "earn", "salary", "income", "pay"].some(k => msgLower.includes(k))) {
     if (faction === "corp") return `Government budgets are approved, and my personal ledger sits at ₹${wealth} in savings.`;
     if (faction === "hacker") return `Salary got credited, but after paying PG rent and ordering food, I only have ₹${wealth} left.`;
     if (faction === "syndicate") return `Union fees collection is going strong. My cut is ₹${wealth} in cash right now.`;
     return `Extremely tight budget. After paying the milk vendor, I got ₹${wealth} in my pocket.`;
+  }
+
+  // Traffic / City / Silk Board
+  if (["traffic", "silk board", "jam", "road", "metro", "city", "bangalore", "location", "where"].some(k => msgLower.includes(k))) {
+    if (faction === "corp") return "Municipal road widening proposals are pending review. The current gridlock is due to illegal parking.";
+    if (faction === "hacker") return "I spend 2 hours daily at Silk Board. Absolute disaster. I just sit in the cab writing scripts.";
+    if (faction === "syndicate") return "Rickshaw fares are double during peak hours at Silk Board. Traffic is literally our business model.";
+    return "Vehicles aren't moving at all outside. Better to stay at my tea stall and drink a hot tea.";
   }
 
   // Plans / Goals

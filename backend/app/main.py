@@ -265,7 +265,7 @@ def _user_chat_procedural_fallback(agent_ctx: dict, message: str) -> str:
             return "I am just trying to survive the Silk Board traffic, get some samosas, and get home safely."
 
     # 5. Wealth / Money Queries
-    if any(k in msg_lower for k in ["wealth", "money", "credit", "rich", "rupees", "cash"]):
+    if any(k in msg_lower for k in ["wealth", "money", "credit", "rich", "rupee", "cash", "earn", "salary", "income", "pay"]):
         if faction == "corp":
             return f"Government budgets are approved, and my personal ledger sits at ₹{agent_ctx['wealth']:.0f} in savings."
         elif faction == "hacker":
@@ -274,6 +274,17 @@ def _user_chat_procedural_fallback(agent_ctx: dict, message: str) -> str:
             return f"Union fees collection is going strong. My cut is ₹{agent_ctx['wealth']:.0f} in cash right now."
         else:
             return f"Extremely tight budget. After paying the milk vendor, I got ₹{agent_ctx['wealth']:.0f} in my pocket."
+
+    # 5.5 Traffic / City / Silk Board Queries
+    if any(k in msg_lower for k in ["traffic", "silk board", "jam", "road", "metro", "city", "bangalore", "location", "where"]):
+        if faction == "corp":
+            return "Municipal road widening proposals are pending review. The current gridlock is due to illegal parking."
+        elif faction == "hacker":
+            return "I spend 2 hours daily at Silk Board. Absolute disaster. I just sit in the cab writing scripts."
+        elif faction == "syndicate":
+            return "Rickshaw fares are double during peak hours at Silk Board. Traffic is literally our business model."
+        else:
+            return "Vehicles aren't moving at all outside. Better to stay at my tea stall and drink a hot tea."
 
     # 6. Faction Queries
     if any(k in msg_lower for k in ["faction", "corp", "hacker", "syndicate"]):
