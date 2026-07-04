@@ -62,7 +62,7 @@ export default function AgentDossierModal({ agent, onClose }) {
     api.getAgentTimeline(agent.id).then(setTimeline);
     api.getBusinesses().then((bizList) => {
       // Find businesses owned or worked at by this agent
-      const related = bizList.filter(b => b.owner_id === agent.id || (b.employees && b.employees.includes(agent.id)));
+      const related = bizList.filter(b => b.owner_id === agent.id || (Array.isArray(b.employees) && b.employees.includes(agent.id)));
       setBusinessInfo(related);
     });
   }, [agent]);

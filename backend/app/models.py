@@ -8,7 +8,31 @@ from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Column, DateTime, Float, Integer, String
 
+import json
+from sqlalchemy.types import TypeDecorator
+
 from .database import Base
+
+
+class SafeJSON(TypeDecorator):
+    """Custom JSON type that guarantees loaded values are parsed Python dicts/lists,
+    even if the underlying DB driver/dialect returns them as raw strings.
+    """
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except Exception:
+                return {}
+        return value
 
 
 def _now():
@@ -24,7 +48,7 @@ class Event(Base):
     type = Column(String, nullable=False, index=True)
     agent_id = Column(Integer, index=True)        # actor
     target_id = Column(Integer, index=True)       # other party, if any
-    payload = Column(JSON, default=dict)
+    payload = Column(SafeJSON, default=dict)
     importance = Column(Float, default=0.1)
     created_at = Column(DateTime, default=_now)
 
@@ -80,7 +104,7 @@ class Business(Base):
     x = Column(Integer)
     y = Column(Integer)
     capital = Column(Float, default=100.0)
-    employees = Column(JSON, default=list)  # list of agent ids
+    employees = Column(SafeJSON, default=list)  # list of agent ids
     day_founded = Column(Integer, default=0)
     status = Column(String, default="open")  # open | bankrupt
 
@@ -93,7 +117,7 @@ class Plan(Base):
     agent_id = Column(Integer, index=True, nullable=False)
     day_created = Column(Integer, nullable=False)
     goal = Column(String, nullable=False)
-    steps = Column(JSON, default=list)     # [{"action": ..., "note": ...}, ...]
+    steps = Column(SafeJSON, default=list)     # [{"action": ..., "note": ...}, ...]
     step_index = Column(Integer, default=0)
     status = Column(String, default="active")  # active | done
     source = Column(String, default="llm")     # llm | fallback
