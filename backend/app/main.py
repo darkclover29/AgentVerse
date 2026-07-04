@@ -325,27 +325,27 @@ def _user_chat_procedural_fallback(agent_ctx: dict, message: str) -> str:
         rng = random.Random(name.__hash__() + len(message))
         return rng.choice(greetings.get(faction, ["Hello there."]))
 
-    # 8. General conversational queries (variety fallback pools)
+    # 8. General conversational queries (variety fallback pools explaining local LLM)
     fallbacks = {
         "corp": [
-            "Observer signal verified. Please do not disrupt municipal frequencies.",
-            "If this is not related to building permissions, I must return to my file reviews.",
-            "Local municipal affairs are complicated. Stand clear, observer."
+            "Observer, I am operating on a low-bandwidth procedural backup. To enable my full cognitive planning and chat abilities, run the simulation locally with Ollama active.",
+            "This sublink query doesn't match my current ledger instructions. Note that full LLM-driven chat is only active when you run this project locally with Ollama.",
+            "Local municipal directories are locked in procedural mode. Run this server locally with Ollama to enable unrestricted AI chat."
         ],
         "hacker": [
-            "Hacking my PG internet connection isn't easy. What do you want, ghost in the router?",
-            "Just refactoring some microservices. Keep it brief.",
-            "If this is about corporate audit checks, I'm offline. Otherwise, speak."
+            "My neural link is in safe-mode backup! I can only give you canned responses here. Run the AgentVerse server locally with Ollama to unlock my full brain power!",
+            "Ping received, but I'm running on a low-level fallback script. Download the repository and host it locally with Ollama to chat with my real AI model.",
+            "Warning: Local server connection is simulated. Run the project locally with Ollama to bypass this procedural chatbot backup."
         ],
         "syndicate": [
-            "Local cartel lines are secure. Make it quick, I have rounds to run.",
-            "Bhai, traffic at Silk Board is a mess today. What is the emergency?",
-            "Rickshaw union rules: no free info. But since you bypassed my firewall, what's on your mind?"
+            "Signal is weak, Bhai. I'm on a basic procedural frequency. If you want a real, smart conversation, download the repo and run me locally with Ollama.",
+            "Rickshaw union bandwidth limits are active on this hosted site. Run the backend locally with Ollama to unlock my full LLM brain.",
+            "I can't understand this custom neural pulse on a fallback link. Host the app locally on your machine with Ollama to talk to my full AI model."
         ],
         "unaligned": [
-            "Who's there? My neural link is vibrating... is this a local grid glitch or did I drink too much adrak chai?",
-            "Just keeping my head down and managing my shop. What do you want?",
-            "Metropolis is chaotic today. If you are not buying, please clear the line, boss."
+            "Sorry boss, my mind is feeling a bit mechanical right now — I'm running on a procedural fallback. To chat with my full LLM brain, run this project locally with Ollama!",
+            "Namaste. This hosted demo uses basic canned responses. If you want to experience my full AI-powered dialogue, start the project locally with Ollama active.",
+            "My neural link is vibrating with a generic frequency. Run this app locally with Ollama to start a fully unscripted, dynamic chat with me!"
         ]
     }
     import random
