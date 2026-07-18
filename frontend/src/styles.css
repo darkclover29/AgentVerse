@@ -1682,4 +1682,160 @@ input[type="range"]::-moz-range-thumb {
 .sensor-badge.moderate { background: rgba(245, 158, 11, 0.2); color: var(--warn); }
 .sensor-badge.poor { background: rgba(240, 113, 106, 0.2); color: var(--bad); }
 
+/* ============================================================
+   Responsive layout
+   The desktop console is information-dense by design, but the
+   same fixed rail/header treatment becomes cramped on phones.
+   Keep the content order intact and let each region breathe.
+   ============================================================ */
+@media (max-width: 1200px) {
+  .sidebar { width: 300px; padding: 16px; }
+  .city { grid-template-columns: minmax(0, 1fr) 200px; gap: 16px; }
+  .hud, .content { padding-left: 18px; padding-right: 18px; }
+}
+
+@media (max-width: 768px) {
+  html, body, #root { min-height: 100%; height: auto; }
+  body { font-size: 14px; overflow-x: hidden; }
+  .app { min-height: 100dvh; height: auto; flex-direction: column; }
+  .main { width: 100%; min-width: 0; }
+
+  .hud {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    padding: 14px 14px 12px;
+    align-items: start;
+  }
+  .brand { font-size: 15px; letter-spacing: 1.6px; }
+  .hud .sub {
+    max-width: 26ch;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .badge {
+    max-width: 132px;
+    justify-self: end;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+  .hud-stats {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin-left: 0;
+  }
+  .stat { min-width: 0; padding: 6px 7px; }
+  .stat .k { font-size: 8px; letter-spacing: 0.35px; }
+  .stat .v { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+
+  .content { padding: 14px 12px 18px; overflow: visible; }
+  .toolbar {
+    display: block;
+    margin-bottom: 14px;
+  }
+  .tabs {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 3px;
+    margin-bottom: 10px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { min-height: 44px; flex: 0 0 auto; padding: 8px 12px; font-size: 12px; }
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+  .controls button, .controls select {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+  .controls .primary { grid-column: span 2; }
+  .overlay-select { min-width: 0; }
+
+  .city {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+  }
+  .city > :first-child, .city > .card { width: 100%; min-width: 0; }
+  .grid-wrap { max-width: none; width: min(100%, 640px); }
+  .timeline-wrap { width: 100%; max-width: none; margin-top: 14px; }
+  .grid-telemetry-hud { top: 8px; right: 8px; min-width: 140px; max-width: calc(100% - 16px); font-size: 9px; }
+  .tile-editor-popup { left: 8px; right: 8px; width: auto; max-width: none; }
+
+  .city > aside {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px !important;
+  }
+  .city > aside .card { min-width: 0; }
+
+  .drawer { width: 100%; }
+  .drawer.open { height: 250px; }
+  .drawer-header { min-height: 44px; padding: 7px 12px; gap: 8px; }
+  .drawer-header .title { min-width: 0; font-size: 9px; letter-spacing: 0.55px; }
+  .drawer-header .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drawer-header > div:last-child { flex-shrink: 0; }
+  .live-signal { display: none; }
+  .drawer-header .toggle-btn { min-height: 32px; padding: 5px 8px; font-size: 9px; }
+  .drawer-filters { padding: 6px 12px; overflow-x: auto; }
+  .filter-btn { min-height: 36px; padding: 6px 10px; }
+  .drawer-content { padding: 10px 12px; font-size: 11px; }
+  .log-line { gap: 7px; margin-bottom: 7px; }
+  .log-line .time { white-space: normal; min-width: 84px; }
+
+  .sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    padding: 18px 12px 28px;
+    overflow: visible;
+  }
+  .section-title { margin-top: 16px; }
+  .sensor-widget { gap: 10px; }
+  .sensor-row { gap: 10px; align-items: flex-start; }
+  .sensor-row .val { text-align: right; }
+  .agent-row { min-height: 44px; padding: 8px 9px; }
+
+  .dossier-overlay { padding: 8px; align-items: stretch; }
+  .dossier-modal { width: 100%; height: 100%; max-height: none; border-radius: 10px; }
+  .dossier-header-bar { padding: 10px 12px; }
+  .dossier-title { font-size: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dossier-close-btn { min-height: 40px; padding: 7px 10px; }
+  .dossier-grid { display: block; overflow-y: auto; }
+  .dossier-col-left, .dossier-col-mid, .dossier-col-right {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 14px;
+    overflow: visible;
+  }
+  .dossier-col-mid { min-height: 420px; }
+  .dossier-avatar-hud { gap: 12px; padding: 12px; }
+  .dossier-svg { width: 68px; height: 68px; }
+  .dossier-telemetry .name-line { font-size: 13px; }
+  .dossier-chat-panel { min-height: 360px; }
+}
+
+@media (max-width: 420px) {
+  .controls { grid-template-columns: 1fr; }
+  .controls .primary { grid-column: auto; }
+  .city > aside { grid-template-columns: 1fr; }
+  .tab { padding-inline: 10px; }
+  .stat .v { font-size: 11px; }
+}
 

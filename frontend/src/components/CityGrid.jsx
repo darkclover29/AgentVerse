@@ -162,7 +162,7 @@ export default function CityGrid({
         >
           <div className="tile-glow-border"></div>
           {isFlooded && <div className="water-ripple"></div>}
-          {isGridlock && <div className="traffic-indicator">🚗</div>}
+          {isGridlock && <div className="traffic-indicator" aria-label="Traffic gridlock">!</div>}
           {MICRO_ICONS[type]}
         </div>
       );

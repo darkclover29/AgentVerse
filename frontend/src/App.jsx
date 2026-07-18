@@ -420,7 +420,7 @@ export default function App() {
               <div className="sensor-row">
                 <span className="lbl">WEATHER:</span>
                 <span className={`val sensor-badge ${environment?.is_monsoon ? "poor" : "good"}`}>
-                  {environment?.is_monsoon ? "⛈️ Monsoon Flood" : "☀️ Clear Sky"}
+                  {environment?.is_monsoon ? "MONSOON FLOOD" : "CLEAR SKY"}
                 </span>
               </div>
               <div className="sensor-row">
@@ -428,13 +428,13 @@ export default function App() {
                 <span className={`val sensor-badge ${
                   (environment?.aqi_level || 0) < 150 ? "good" : (environment?.aqi_level || 0) < 250 ? "moderate" : "poor"
                 }`}>
-                  😷 {environment?.aqi_level || 100} ({environment?.aqi_status || "GOOD"})
+                  {environment?.aqi_level || 100} ({environment?.aqi_status || "GOOD"})
                 </span>
               </div>
               <div className="sensor-row">
                 <span className="lbl">TRAFFIC:</span>
                 <span className={`val sensor-badge ${environment?.is_traffic_gridlock ? "poor" : "good"}`}>
-                  {environment?.is_traffic_gridlock ? "🚗 SILK BOARD BLOCKED" : "🟢 normal lanes"}
+                  {environment?.is_traffic_gridlock ? "SILK BOARD BLOCKED" : "NORMAL LANES"}
                 </span>
               </div>
               <div className="sensor-row">
